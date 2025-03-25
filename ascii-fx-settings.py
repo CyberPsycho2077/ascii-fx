@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import os, json, subprocess, shutil
+import os, json, subprocess, shutil, platform
 from pathlib import Path
 from rich.console import Console
 from rich.prompt import Prompt, Confirm
@@ -13,16 +13,21 @@ DEFAULT_PROFILE = CONFIG_DIR / "default.json"
 STYLES = ["blocky", "smooth", "ultra", "retro", "dots", "bars", "squares", "wide", "dense"]
 console = Console()
 
+ASCII_FX_SCRIPT = "ascii-fx-win.py" if platform.system() == "Windows" else "ascii-fx.py"
+
+
 def create_default():
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     if not DEFAULT_PROFILE.exists():
         json.dump({"style": "blocky", "image": str(Path(DEFAULT_IMAGE).expanduser()), "width": 38, "theme": "dark", "wave": False, "char": ""}, open(DEFAULT_PROFILE, "w"), indent=2)
         console.print("[green]✔ Created default profile[/green]")
 
+
 def show_preview(style, image, width, char):
-    cmd = ["ascii-fx.py", "--style", style, "--image", image, "--width", str(width)]
+    cmd = ["python", ASCII_FX_SCRIPT, "--style", style, "--image", image, "--width", str(width)]
     if char: cmd += ["--char", char]
     subprocess.run(cmd)
+
 
 def select_image(default_path):
     folder = Path(default_path).expanduser().parent
@@ -34,6 +39,7 @@ def select_image(default_path):
     console.print(t)
     idx = Prompt.ask("Select image number or type full path", default="1")
     return str(folder / imgs[int(idx)-1]) if idx.isdigit() and 1 <= int(idx) <= len(imgs) else idx
+
 
 def select_profile():
     profiles = sorted(CONFIG_DIR.glob("*.json"))
@@ -65,6 +71,7 @@ def select_profile():
     elif choice.isdigit() and 1 <= int(choice) <= len(profiles): return profiles[int(choice)-1].stem
     return choice.strip()
 
+
 def tui_menu():
     console.print(Panel("[bold cyan]ASCII-FX TUI Settings[/bold cyan]", expand=False))
     create_default()
@@ -84,7 +91,8 @@ def tui_menu():
     json.dump(config, open(config_path, "w"), indent=2)
     console.print(f"\n[bold green]✅ Profile '{profile}' saved to {config_path}[/bold green]")
     if Confirm.ask("Launch ascii-fx now?", default=True):
-        subprocess.run(["ascii-fx.py", "--profile", profile])
+        subprocess.run(["python", ASCII_FX_SCRIPT, "--profile", profile])
+
 
 if __name__ == "__main__":
     tui_menu()
